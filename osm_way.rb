@@ -1,5 +1,6 @@
 class OSMWay
   attr_accessor :id, :nodes, :tags
+
   def initialize(id, nodes, tags)
     # Instance variables
     @id = id
@@ -8,8 +9,7 @@ class OSMWay
   end
 
   def closed?
-    #nodes.first == nodes.last
-    true
+    nodes.first.id == nodes.last.id
   end
 
 
