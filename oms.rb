@@ -15,7 +15,7 @@ end
 
 def getClosedWays(xmldoc, nodes)
   closedWays = []
-  XPath.each(xmldoc, "//way[not(tag/@k='landuse')]") do |w|
+  XPath.each(xmldoc, "/osm/way[not(tag/@k='landuse')]") do |w|
 
     way = parseWay(w, nodes)
 
@@ -26,16 +26,11 @@ def getClosedWays(xmldoc, nodes)
   closedWays
 end
 
-def getPostCodesInRegion(n, s, e, w)
+def loadAllPostcodes
   filename = "ONSPD_NOV_2012_UK_O.txt"
   file = File.new("/Users/Aidan/dev/workspace/"+filename, "r")
-  counter = 0;
   postcodes=Hash.new
   while (line = file.gets)
-    counter+=1
-    if ((counter % 10)==0) then
-      #puts counter.to_s + "\t" + Time.now.to_s
-    end
 
     pcd = line[0, 7]
     pcd2 = line[7, 8]
@@ -48,14 +43,26 @@ def getPostCodesInRegion(n, s, e, w)
     osnrth1m = line[69, 7].to_i
     osgrdind = line[76, 1]
 
+    #latlon = OSGB36.en_to_ll(oseast1m, osnrth1m)
+
     if (doterm.size==0 && osgrdind.to_i==1) then
-      if (oseast1m<e&&oseast1m>w&&osnrth1m>s&&osnrth1m<n) then
-        postcodes[pcd] = [pcd2, dointr, doterm, oseast1m, osnrth1m, osgrdind]
-      end
+        postcodes[pcd] = [pcd2, dointr, doterm, oseast1m, osnrth1m, osgrdind ]
     end
 
   end
+  puts "Initialized with #{postcodes.size} postcodes"
   postcodes
+end
+def getPostCodesInRegion(n, s, e, w)
+  @postcodes = loadAllPostcodes if @postcodes.nil?
+  postcodes_in_region = Hash.new
+
+  @postcodes.each do |k,v|
+    if (v[4]<n && v[4]>s && v[3]<e && v[3]>w) then
+      postcodes_in_region[k]=v
+    end
+  end
+  postcodes_in_region
 end
 
 def convertWayToPolygon(way)
@@ -141,9 +148,9 @@ class OSM
   # To change this template use File | Settings | File Templates.
   filename = "xae"
   file = File.new("/Users/Aidan/dev/workspace/"+filename, "r")
-  output = File.open(filename+".txt", 'w')
+  #output = File.open(filename+".txt", 'w')
 
-  os_increment = 5000;
+  os_increment = 1000;
   easting_limit = 700000;
   northing_limit = 1200000;
 
@@ -178,7 +185,7 @@ class OSM
         #pc_data[3]#easting
         #pc_data[3]#northing
         latlon = OSGB36.en_to_ll(pc_data[3], pc_data[4])
-        puts(pc)
+        #puts(pc)
         regionfile.write(pc)
         closed_ways_in_region.each do |way|
           # Is lat/lon inside this way
@@ -198,61 +205,5 @@ class OSM
     end
     easting+=os_increment;
   end
-  exit
-  #file = File.new("/Users/Aidan/dev/workspace/ONS_test.txt", "r")
-  counter = 0;
-  while (line = file.gets)
-    counter+=1
-    if ((counter % 10)==0) then
-      puts counter.to_s + "\t" + Time.now.to_s
-      puts @payload
-      output.flush
-    end
-
-    pcd = line[0, 7]
-    pcd2 = line[7, 8]
-
-    dointr = line[23, 6]
-    doterm = line[29, 6].strip
-
-
-    oseast1m = line[63, 6].to_i
-    osnrth1m = line[69, 7].to_i
-    osgrdind = line[76, 1]
-
-    offset = 0.005;
-
-    latlon = OSGB36.en_to_ll(oseast1m, osnrth1m)
-
-    #http://overpass-api.de/api/
-    # POST data -
-    # (way["highway"!~"."](latlon[:latitude],latlon[:longitude],latlon[:latitude]+offset,latlon[:longitude]+offset);<;);out;
-
-    #To view
-    if (doterm.size==0 && osgrdind.to_i==1) then
-
-
-      all_the_nodes = parseNodes(xmldoc)
-
-      ways = getClosedWays(xmldoc, all_the_nodes)
-
-      output.write(pcd)
-      ways.each do |way|
-        # Is lat/lon inside this way
-        polygon = convertWayToPolygon(way)
-        if (polygon.contains?(Point(latlon[:longitude].to_f, latlon[:latitude].to_f))) then
-          output.write("\t"+way.id)
-        end
-
-      end
-
-      output.write("\n")
-
-    end
-  end
-
-  output.flush
-  #TW94DU = 51.481714,-0.279652
-  #51.481,-0.279
 
 end
