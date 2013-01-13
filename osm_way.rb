@@ -9,7 +9,11 @@ class OSMWay
   end
 
   def closed?
-    nodes.first.id == nodes.last.id
+    begin
+      nodes.first.id == nodes.last.id
+    rescue
+      false
+    end
   end
 
 
