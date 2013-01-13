@@ -15,7 +15,7 @@ end
 
 def getClosedWays(xmldoc, nodes)
   closedWays = []
-  XPath.each(xmldoc, "/osm/way[not(tag/@k='landuse')]") do |w|
+  XPath.each(xmldoc, "/osm/way[not(tag/@k='landuse' or tag/@k='highway')]") do |w|
 
     way = parseWay(w, nodes)
 
