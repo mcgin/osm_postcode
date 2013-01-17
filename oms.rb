@@ -1,7 +1,7 @@
 require 'net/http'
-require './osgb36.rb'
-require './osm_way.rb'
-require './osm_node.rb'
+require './osgb36'
+require './osm_way'
+require './osm_node'
 require 'rexml/document'
 require 'geometry'
 include REXML
@@ -15,10 +15,9 @@ end
 
 def getClosedWays(xmldoc, nodes)
   closedWays = []
-  XPath.each(xmldoc, "/osm/way[not(tag/@k='landuse' or tag/@k='highway')]") do |w|
-
+  #XPath.each(xmldoc, "/osm/way[not(tag/@k='landuse' or tag/@k='highway')]") do |w|
+  XPath.each(xmldoc, "/osm/way[tag/@k='building']") do |w|
     way = parseWay(w, nodes)
-
     if way.closed? then
       closedWays.push(way)
     end
@@ -77,19 +76,15 @@ def parseWay(way_xml, all_nodes)
   #puts way_xml
   XPath.each(way_xml, "nd") do |nd|
     node_id = nd.attributes["ref"];
-
     wayNodes.push all_nodes[node_id]
-
-
   end
   wayTags = Hash.new
 
   XPath.each(way_xml, "tag") do |tag|
     wayTags[tag.attributes["k"]] = tag.attributes["v"]
-
   end
 
-  newWay = OSMWay.new(way_xml.attributes["id"], wayNodes, wayTags)
+  newWay = OSMWay.new(way_xml.attributes["id"], wayNodes, wayTags, way_xml.attributes["version"], way_xml.to_s)
 end
 
 def retrieveData (n, s, e, w)
@@ -106,7 +101,7 @@ def retrieveData (n, s, e, w)
   payload +="<item/>"
   payload +="	<recurse into='foo' type='way-node'/>"
   payload +="</union>"
-  payload +="<print from='foo'/>"
+  payload +="<print from='foo' mode='meta'/>"
   puts payload
   req = Net::HTTP::Post.new(post_ws, initheader = {'Content-Type' => 'application/json', 'data' => payload})
 
@@ -119,7 +114,7 @@ def retrieveData (n, s, e, w)
   Document.new(response.body)
 end
 
-class OSM
+
   # To change this template use File | Settings | File Templates.
   filename = "xae"
   file = File.new("/Users/Aidan/dev/workspace/"+filename, "r")
@@ -188,4 +183,3 @@ class OSM
     easting+=os_increment;
   end
 
-end

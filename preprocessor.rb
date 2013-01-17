@@ -1,4 +1,4 @@
-require './util.rb'
+require './util'
 # Used to preprocess the ONS data to remove
 #   Any postcodes that map to the same point as another
 #   Any postcodes with positional quality not set to "Building" level
