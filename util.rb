@@ -44,8 +44,8 @@ module Util
   def copyPostcodes(filein, fileout, postcode_hash)
     #filename = "ONSPD_NOV_2012_UK_O.txt"
     while (line = filein.gets)
-      fileout.write(line+"\n") if postcode_hash.has_key?(line[0, 7])
-      puts line
+      fileout.write(line) if postcode_hash.has_key?(line[0, 7])
+      #puts line
     end
   end
 end

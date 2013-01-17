@@ -1,7 +1,7 @@
 require './util.rb'
 # Used to preprocess the ONS data to remove
 #   Any postcodes that map to the same point as another
-#   Any postcoeds with positional quality not set to "Building" level
+#   Any postcodes with positional quality not set to "Building" level
 #postcodes = Util.loadAllPostcodes("input/ONS10000.txt") do |postcode|
 postcodes = Util.loadAllPostcodes(ARGV[0]) do |postcode|
   #What to filter - postcodes with a date of termination and postcodes with less than perfect accuracy
