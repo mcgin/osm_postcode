@@ -1,8 +1,8 @@
 require 'logger'
 module Util
   extend self
-
-  def loadAllPostcodes(filename = "ONS.txt")
+  #Can accept a method that takes the postcode hash as an arguemnt and filters it
+  def loadAllPostcodes(filename = "ONS.txt", include_raw_data=false)
 
 
     #filename = "ONSPD_NOV_2012_UK_O.txt"
@@ -22,19 +22,30 @@ module Util
       osgrdind = line[76, 1]
 
       #latlon = OSGB36.en_to_ll(oseast1m, osnrth1m)
-
       #if (doterm.size==0 && osgrdind.to_i==1) then
-        postcodes[pcd] = Hash.new
-        postcodes[pcd]["pcd2"]=pcd2
-        postcodes[pcd]["dointr"]=dointr
-        postcodes[pcd]["doterm"]=doterm
-        postcodes[pcd]["oseast1m"]=oseast1m
-        postcodes[pcd]["osnrth1m"]=osnrth1m
-        postcodes[pcd]["osgrdind"]=osgrdind
-        postcodes[pcd]["complete"]=line
+      temp_pc = Hash.new
+      temp_pc["pcd"]=pcd2
+      temp_pc["pcd2"]=pcd2
+      temp_pc["dointr"]=dointr
+      temp_pc["doterm"]=doterm
+      temp_pc["oseast1m"]=oseast1m
+      temp_pc["osnrth1m"]=osnrth1m
+      temp_pc["osgrdind"]=osgrdind
+      temp_pc["complete"]=line if include_raw_data
       #end
+      postcodes[pcd] = temp_pc  unless  (block_given? ? filter = yield(temp_pc) : false)
+
 
     end
+    file.close
     return postcodes
+  end
+
+  def copyPostcodes(filein, fileout, postcode_hash)
+    #filename = "ONSPD_NOV_2012_UK_O.txt"
+    while (line = filein.gets)
+      fileout.write(line+"\n") if postcode_hash.has_key?(line[0, 7])
+      puts line
+    end
   end
 end
