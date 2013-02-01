@@ -2,6 +2,7 @@ require 'net/http'
 require './osgb36'
 require './osm_way'
 require './osm_node'
+require './util'
 require 'rexml/document'
 require 'geometry'
 include REXML
@@ -29,10 +30,14 @@ end
 def getPostCodesInRegion(n, s, e, w)
   #retrieveData(latlon_north_west[:latitude], latlon_south_east[:latitude],
   ##latlon_north_west[:longitude], latlon_south_east[:longitude])
-  @postcodes = loadAllPostcodes if @postcodes.nil?
+  #@postcodes = loadAllPostcodes if @postcodes.nil?
   postcodes_in_region = Hash.new
+  puts n
+  puts s
+  puts e
+  puts w
   @postcodes.each do |k,v|
-    if (v[4]<n && v[4]>s && v[3]<e && v[3]>w) then
+    if (v["osnrth1m"].to_i<n.to_i && v["osnrth1m"].to_i>s.to_i && v["oseast1m"].to_i<e.to_i && v["oseast1m"].to_i>w.to_i) then
       postcodes_in_region[k]=v
     end
   end
@@ -89,7 +94,7 @@ end
 
 def retrieveData (n, s, e, w)
   #@host = 'overpass-api.de'
-  host = '127.0.0.1'
+  host = 'ec2-54-228-43-250.eu-west-1.compute.amazonaws.com'
   post_ws = "/api/interpreter"
 
 
@@ -102,7 +107,7 @@ def retrieveData (n, s, e, w)
   payload +="	<recurse into='foo' type='way-node'/>"
   payload +="</union>"
   payload +="<print from='foo' mode='meta'/>"
-  puts payload
+  #puts payload
   req = Net::HTTP::Post.new(post_ws, initheader = {'Content-Type' => 'application/json', 'data' => payload})
 
 
@@ -114,72 +119,95 @@ def retrieveData (n, s, e, w)
   Document.new(response.body)
 end
 
+@postcodes = Util.loadAllPostcodes(ARGV[0])
+start_easting = ARGV[1].to_i
+start_northing = ARGV[2].to_i
+end_easting =  ARGV[3].to_i
+end_northing =  ARGV[4].to_i
+northing_increment = ARGV[5].to_i;
+easting_increment = ARGV[6].to_i;
 
-  # To change this template use File | Settings | File Templates.
-  filename = "xae"
-  file = File.new("/Users/Aidan/dev/workspace/"+filename, "r")
+#puts @postcodes["AB101AB"]["osnrth1m"]
+#puts @postcodes["AB101AB"]["oseast1m"]
+
+
+# To change this template use File | Settings | File Templates.
+  #filename = "xae"
+  #file = File.new("/Users/Aidan/dev/workspace/"+filename, "r")
   #output = File.open(filename+".txt", 'w')
 
-  os_increment = 2500;
-  easting_limit = 700000;
-  northing_limit = 1200000;
-  easting_limit = 700000;
-  northing_limit = 1200000;
+
+  #easting_limit = 700000;
+  #northing_limit = 1200000;
+
+  #easting_limit = 700000;
+  #northing_limit = 1200000;
 
   modifier = 1.0
-  easting = 250000;
-  while easting<easting_limit do
-    northing = 50000;
-    while northing<northing_limit
+  easting = start_easting#394230;
+  while easting<end_easting do
+    northing = start_northing#806465;
+    #start_northing = 0
+    while northing<end_northing
       puts easting.to_s + "\t" + northing.to_s
 
-      n=northing+os_increment
+      n=northing+northing_increment
       s=northing
       w=easting
-      e=easting+os_increment
+      e=easting+easting_increment
 
       postcodes_in_region = getPostCodesInRegion(n, s, e, w)
       #Fix this so the counter increments
       #next if postcodes_in_region.size==0;
       puts "There is #{postcodes_in_region.size} postcodes in the region " + Time.now.to_s
+      if(postcodes_in_region.size>0) then
+      #if(postcodes_in_region.size>=0) then
+        modifier = 1.0
+        latlon_south_w = OSGB36.en_to_ll(w, s)
+        latlon_north_e = OSGB36.en_to_ll(e, n)
+        puts "Going to overpass " + Time.now.to_s
+        xml_document = retrieveData(latlon_north_e[:latitude], latlon_south_w[:latitude], latlon_north_e[:longitude], latlon_south_w[:longitude])
+        puts "Got overpass response " + Time.now.to_s
+        the_nodes=parseNodes xml_document
+        puts "Parsed #{the_nodes.size} nodes " + Time.now.to_s
 
-      latlon_south_w = OSGB36.en_to_ll(w, s)
-      latlon_north_e = OSGB36.en_to_ll(e, n)
-      puts "Going to overpass " + Time.now.to_s
-      xml_document = retrieveData(latlon_north_e[:latitude], latlon_south_w[:latitude], latlon_north_e[:longitude], latlon_south_w[:longitude])
-      puts "Got overpass response " + Time.now.to_s
-      the_nodes=parseNodes xml_document
-      puts "Parsed #{the_nodes.size} nodes " + Time.now.to_s
-
-      closed_ways_in_region = getClosedWays(xml_document, the_nodes)
-      puts "Parsed #{closed_ways_in_region.size} closed ways " + Time.now.to_s
+        closed_ways_in_region = getClosedWays(xml_document, the_nodes)
+        puts "Parsed #{closed_ways_in_region.size} closed ways " + Time.now.to_s
 
 
-      regionfile = File.open("output/"+s.to_s+"-"+w.to_s+"-"+n.to_s+"-"+e.to_s+".txt", "w")
-      postcodes_in_region.each do |pc, pc_data|
-        #pc_data[3]#easting
-        #pc_data[3]#northing
-        latlon = OSGB36.en_to_ll(pc_data[3], pc_data[4])
-        #puts(pc)
-        regionfile.write(pc)
-        closed_ways_in_region.each do |way|
-          # Is lat/lon inside this way
-          polygon = convertWayToPolygon(way)
-          if (polygon.contains?(Point(latlon[:longitude].to_f, latlon[:latitude].to_f))) then
-            regionfile.write("\t"+way.id)
+        regionfile = File.open("output/"+s.to_s+"-"+w.to_s+"-"+n.to_s+"-"+e.to_s+".txt", "w")
+
+        postcodes_in_region.each do |pc, pc_data|
+          #pc_data[3]#easting
+          #pc_data[3]#northing
+          latlon = OSGB36.en_to_ll(pc_data["oseast1m"].to_i, pc_data["osnrth1m"].to_i)
+          #puts(pc)
+          #regionfile.write(pc)
+          closed_ways_in_region.each do |way|
+            # Is lat/lon inside this way
+            polygon = convertWayToPolygon(way)
+            if (polygon.contains?(Point(latlon[:longitude].to_f, latlon[:latitude].to_f))) then
+              regionfile.write("\t"+way.id+"\tInsert version number")
+              way_xml=Document.new(way.xml)
+              way_xml.add_element "tag", {"k"=>"addr:postcode", "v"=>pc}
+              regionfile.write(way_xml.to_s)
+              regionfile.write("\n")
+            end
+
           end
+          #regionfile.write("\n")
 
         end
-        regionfile.write("\n")
-
+        #modifier*= 0.5 if ( (closed_ways_in_region.size*postcodes_in_region.size)>50000 )
+        #modifier*= 1.25 if ( (closed_ways_in_region.size*postcodes_in_region.size)<10000 )
+        #puts "Modifier is #{modifier}"
+        regionfile.flush
+        regionfile.close
+      else
+        modifier*=1.1
       end
-      #modifier*= 0.5 if ( (closed_ways_in_region.size*postcodes_in_region.size)>50000 )
-      #modifier*= 1.25 if ( (closed_ways_in_region.size*postcodes_in_region.size)<10000 )
-      puts "Modifier is #{modifier}"
-      regionfile.flush
-      regionfile.close
-      northing+=(os_increment*modifier);
+      northing+=[(northing_increment*modifier),25000].min;
     end
-    easting+=os_increment;
+    easting+=easting_increment;
   end
 
