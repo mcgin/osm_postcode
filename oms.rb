@@ -156,6 +156,9 @@ easting_increment = ARGV[6].to_i;
       w=easting
       e=easting+easting_increment
 
+      puts OSGB36.en_to_ll(w, s)
+      puts latlon_north_e = OSGB36.en_to_ll(e, n)
+
       postcodes_in_region = getPostCodesInRegion(n, s, e, w)
       #Fix this so the counter increments
       #next if postcodes_in_region.size==0;
@@ -177,19 +180,23 @@ easting_increment = ARGV[6].to_i;
 
         regionfile = File.open("output/"+s.to_s+"-"+w.to_s+"-"+n.to_s+"-"+e.to_s+".txt", "w")
 
+        regionfile.write("<osm>")
         postcodes_in_region.each do |pc, pc_data|
           #pc_data[3]#easting
           #pc_data[3]#northing
           latlon = OSGB36.en_to_ll(pc_data["oseast1m"].to_i, pc_data["osnrth1m"].to_i)
           #puts(pc)
           #regionfile.write(pc)
+
           closed_ways_in_region.each do |way|
             # Is lat/lon inside this way
             polygon = convertWayToPolygon(way)
             if (polygon.contains?(Point(latlon[:longitude].to_f, latlon[:latitude].to_f))) then
-              regionfile.write("\t"+way.id+"\tInsert version number")
+              #regionfile.write("\t"+way.id+"\tInsert version number")
               way_xml=Document.new(way.xml)
-              way_xml.add_element "tag", {"k"=>"addr:postcode", "v"=>pc}
+              #puts way.xml
+              #puts way_xml
+              way_xml.root.add_element "tag", {"k"=>"addr:postcode", "v"=>pc}
               regionfile.write(way_xml.to_s)
               regionfile.write("\n")
             end
@@ -198,6 +205,7 @@ easting_increment = ARGV[6].to_i;
           #regionfile.write("\n")
 
         end
+        regionfile.write("</osm>")
         #modifier*= 0.5 if ( (closed_ways_in_region.size*postcodes_in_region.size)>50000 )
         #modifier*= 1.25 if ( (closed_ways_in_region.size*postcodes_in_region.size)<10000 )
         #puts "Modifier is #{modifier}"
