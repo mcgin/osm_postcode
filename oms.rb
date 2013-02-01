@@ -92,9 +92,8 @@ def parseWay(way_xml, all_nodes)
   newWay = OSMWay.new(way_xml.attributes["id"], wayNodes, wayTags, way_xml.attributes["version"], way_xml.to_s)
 end
 
-def retrieveData (n, s, e, w)
+def retrieveData (host, n, s, e, w)
   #@host = 'overpass-api.de'
-  host = 'ec2-54-228-43-250.eu-west-1.compute.amazonaws.com'
   post_ws = "/api/interpreter"
 
 
@@ -126,6 +125,7 @@ end_easting =  ARGV[3].to_i
 end_northing =  ARGV[4].to_i
 northing_increment = ARGV[5].to_i;
 easting_increment = ARGV[6].to_i;
+host_string = ARGV[7]
 
 #puts @postcodes["AB101AB"]["osnrth1m"]
 #puts @postcodes["AB101AB"]["oseast1m"]
@@ -169,7 +169,7 @@ easting_increment = ARGV[6].to_i;
         latlon_south_w = OSGB36.en_to_ll(w, s)
         latlon_north_e = OSGB36.en_to_ll(e, n)
         puts "Going to overpass " + Time.now.to_s
-        xml_document = retrieveData(latlon_north_e[:latitude], latlon_south_w[:latitude], latlon_north_e[:longitude], latlon_south_w[:longitude])
+        xml_document = retrieveData( host_string, latlon_north_e[:latitude], latlon_south_w[:latitude], latlon_north_e[:longitude], latlon_south_w[:longitude])
         puts "Got overpass response " + Time.now.to_s
         the_nodes=parseNodes xml_document
         puts "Parsed #{the_nodes.size} nodes " + Time.now.to_s
