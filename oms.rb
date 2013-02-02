@@ -32,10 +32,6 @@ def getPostCodesInRegion(n, s, e, w)
   ##latlon_north_west[:longitude], latlon_south_east[:longitude])
   #@postcodes = loadAllPostcodes if @postcodes.nil?
   postcodes_in_region = Hash.new
-  puts n
-  puts s
-  puts e
-  puts w
   @postcodes.each do |k,v|
     if (v["osnrth1m"].to_i<n.to_i && v["osnrth1m"].to_i>s.to_i && v["oseast1m"].to_i<e.to_i && v["oseast1m"].to_i>w.to_i) then
       postcodes_in_region[k]=v

@@ -6,10 +6,12 @@ module Util
 
 
     #filename = "ONSPD_NOV_2012_UK_O.txt"
-    file = File.new(filename, "r")
-    postcodes=Hash.new
-    while (line = file.gets)
+    #file = File.new(filename, "r")
 
+    lines = File.readlines(filename)
+    postcodes=Hash.new
+    #while (line = file.gets)
+    lines.each do |line|
       pcd = line[0, 7]
       pcd2 = line[7, 8]
 
@@ -37,7 +39,7 @@ module Util
 
 
     end
-    file.close
+    #file.close
     return postcodes
   end
 
