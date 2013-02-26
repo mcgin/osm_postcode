@@ -34,7 +34,7 @@ count=nil
 
 puts postcodes.size
 
-out=File.open("input/preprocessed.txt", "w")
+out=File.open(ARGV[0]+"_processed.txt", "w")
 
 Util.copyPostcodes(File.new(ARGV[0]), out, postcodes )
 

@@ -114,6 +114,8 @@ def retrieveData (host, n, s, e, w)
   Document.new(response.body)
 end
 
+#puts OSGB36.to_WGS84(51.481483, -0.280033)
+#exit(1)
 @postcodes = Util.loadAllPostcodes(ARGV[0])
 start_easting = ARGV[1].to_i
 start_northing = ARGV[2].to_i
@@ -132,13 +134,10 @@ host_string = ARGV[7]
   #file = File.new("/Users/Aidan/dev/workspace/"+filename, "r")
   #output = File.open(filename+".txt", 'w')
 
+regionfile = File.open("output/"+start_easting.to_s+"-"+start_northing.to_s+"-"+end_easting.to_s+"-"+end_northing.to_s+".xml", "w")
+regionfile.write("<osm version=\"0.6\" upload=\"true\" generator=\"ONSImporter\">\n")
 
-  #easting_limit = 700000;
-  #northing_limit = 1200000;
-
-  #easting_limit = 700000;
-  #northing_limit = 1200000;
-
+taggedfile = File.open("output/"+start_easting.to_s+"-"+start_northing.to_s+"-"+end_easting.to_s+"-"+end_northing.to_s+"_already_tagged.xml", "w")
   modifier = 1.0
   easting = start_easting#394230;
   while easting<end_easting do
@@ -174,9 +173,7 @@ host_string = ARGV[7]
         puts "Parsed #{closed_ways_in_region.size} closed ways " + Time.now.to_s
 
 
-        regionfile = File.open("output/"+s.to_s+"-"+w.to_s+"-"+n.to_s+"-"+e.to_s+".txt", "w")
 
-        regionfile.write("<osm>")
         postcodes_in_region.each do |pc, pc_data|
           #pc_data[3]#easting
           #pc_data[3]#northing
@@ -192,26 +189,37 @@ host_string = ARGV[7]
               way_xml=Document.new(way.xml)
               #puts way.xml
               #puts way_xml
-              way_xml.root.add_element "tag", {"k"=>"addr:postcode", "v"=>pc}
-              regionfile.write(way_xml.to_s)
-              regionfile.write("\n")
+              way_xml.root.add_element "tag", {"k"=>"addr:postcode", "v"=>pc.gsub(/  /, " ")}
+              way_xml.root.add_attribute "action", "modify"
+
+              if ( XPath.first(way_xml, "count(way/tag[@k='addr:postcode'])").to_i > 1 ) then
+                taggedfile.write(way_xml.to_s)
+                taggedfile.write("\n")
+              else
+                regionfile.write(way_xml.to_s)
+                regionfile.write("\n")
+              end
             end
 
           end
           #regionfile.write("\n")
 
         end
-        regionfile.write("</osm>")
         #modifier*= 0.5 if ( (closed_ways_in_region.size*postcodes_in_region.size)>50000 )
         #modifier*= 1.25 if ( (closed_ways_in_region.size*postcodes_in_region.size)<10000 )
         #puts "Modifier is #{modifier}"
-        regionfile.flush
-        regionfile.close
+
+
       else
         modifier*=1.1
       end
       northing+=[(northing_increment*modifier),25000].min;
+      northing=[northing,end_northing].min
     end
+    regionfile.flush
     easting+=easting_increment;
   end
 
+regionfile.write("</osm>")
+regionfile.flush
+regionfile.close
