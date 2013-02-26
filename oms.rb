@@ -114,7 +114,6 @@ def retrieveData (host, n, s, e, w)
 end
 
 #puts OSGB36.to_WGS84(51.481483, -0.280033)
-#exit(1)
 @postcodes = Util.loadAllPostcodes(ARGV[0])
 start_easting = ARGV[1].to_i
 start_northing = ARGV[2].to_i
@@ -124,14 +123,6 @@ northing_increment = ARGV[5].to_i;
 easting_increment = ARGV[6].to_i;
 host_string = ARGV[7]
 
-#puts @postcodes["AB101AB"]["osnrth1m"]
-#puts @postcodes["AB101AB"]["oseast1m"]
-
-
-# To change this template use File | Settings | File Templates.
-  #filename = "xae"
-  #file = File.new("/Users/Aidan/dev/workspace/"+filename, "r")
-  #output = File.open(filename+".txt", 'w')
 
 regionfile = File.open("output/"+start_easting.to_s+"-"+start_northing.to_s+"-"+end_easting.to_s+"-"+end_northing.to_s+".xml", "w")
 regionfile.write("<osm version=\"0.6\" upload=\"true\" generator=\"ONSImporter\">\n")
