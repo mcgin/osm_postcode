@@ -24,4 +24,5 @@ The main program takes the following as input:
     The overpass server to retrieve from
 
 This example runs in an area in southwest london
+
     osm.rb "input/combined_processed" 518659 0169663 529831 0179224 1000 1000 localhost
