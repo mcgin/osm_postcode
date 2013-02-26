@@ -109,7 +109,6 @@ def retrieveData (host, n, s, e, w)
   req.body = payload
 
   response = Net::HTTP.new(host).start { |http| http.request(req) }
-
   #puts response.body
   Document.new(response.body)
 end
