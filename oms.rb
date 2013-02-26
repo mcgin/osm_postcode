@@ -179,13 +179,14 @@ taggedfile = File.open("output/"+start_easting.to_s+"-"+start_northing.to_s+"-"+
               way_xml=Document.new(way.xml)
               #puts way.xml
               #puts way_xml
-              way_xml.root.add_element "tag", {"k"=>"addr:postcode", "v"=>pc.gsub(/  /, " ")}
               way_xml.root.add_attribute "action", "modify"
 
               if ( XPath.first(way_xml, "count(way/tag[@k='addr:postcode'])").to_i > 1 ) then
+                way_xml.root.add_element "tag", {"k"=>"addr:postcode:dupe", "v"=>pc.gsub(/  /, " ")}
                 taggedfile.write(way_xml.to_s)
                 taggedfile.write("\n")
               else
+                way_xml.root.add_element "tag", {"k"=>"addr:postcode", "v"=>pc.gsub(/  /, " ")}
                 regionfile.write(way_xml.to_s)
                 regionfile.write("\n")
               end
